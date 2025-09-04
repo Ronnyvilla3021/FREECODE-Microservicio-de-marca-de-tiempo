@@ -1,32 +1,51 @@
 // index.js
-// where your node app starts
-
 // init project
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
 
-// enable CORS (https://en.wikipedia.org/wiki/Cross-origin_resource_sharing)
-// so that your API is remotely testable by FCC 
-var cors = require('cors');
-app.use(cors({optionsSuccessStatus: 200}));  // some legacy browsers choke on 204
+// para CORS (que freeCodeCamp pueda probar tu API)
+const cors = require('cors');
+app.use(cors());
 
-// http://expressjs.com/en/starter/static-files.html
+// servir la página en views/index.html
 app.use(express.static('public'));
+const path = require('path');
 
-// http://expressjs.com/en/starter/basic-routing.html
-app.get("/", function (req, res) {
-  res.sendFile(__dirname + '/views/index.html');
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
+// RUTA API principal
+app.get('/api/:date?', (req, res) => {
+  const { date } = req.params;
+  let parsedDate;
 
-// your first API endpoint... 
-app.get("/api/hello", function (req, res) {
-  res.json({greeting: 'hello API'});
+  if (!date) {
+    // sin parámetro -> fecha actual
+    parsedDate = new Date();
+  } else {
+    // si solo tiene números -> timestamp
+    if (/^\d+$/.test(date)) {
+      parsedDate =
+        date.length === 10
+          ? new Date(Number(date) * 1000) // segundos
+          : new Date(Number(date)); // milisegundos
+    } else {
+      parsedDate = new Date(date);
+    }
+  }
+
+  if (parsedDate.toString() === 'Invalid Date') {
+    return res.json({ error: 'Invalid Date' });
+  }
+
+  res.json({
+    unix: parsedDate.getTime(),
+    utc: parsedDate.toUTCString(),
+  });
 });
 
-
-
-// Listen on port set in environment variable or default to 3000
-var listener = app.listen(process.env.PORT || 3000, function () {
+// escuchar puerto (importante usar process.env.PORT para los tests online)
+const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port);
 });
